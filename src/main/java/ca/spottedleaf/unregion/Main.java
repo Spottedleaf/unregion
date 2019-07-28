@@ -24,7 +24,7 @@ public final class Main {
         final File rawChunkDirectory = new File(directory, "rawchunks");
         rawChunkDirectory.mkdirs();
 
-        byte[] chunkTempBuffer = new byte[2 * 1024 * 1024 * 100];
+        ByteBuffer chunkTempBuffer = ByteBuffer.allocateDirect(2 * 1024 * 1024 * 100);
 
         for (int k = 0, len = files.length; k < len; ++k) {
             final File regionFile = files[k];
@@ -55,14 +55,16 @@ public final class Main {
 
             // presize
 
-            if (requiredLength > chunkTempBuffer.length) {
-                chunkTempBuffer = new byte[(int)requiredLength];
+            if (requiredLength > chunkTempBuffer.limit()) {
+                chunkTempBuffer = ByteBuffer.allocateDirect((int)requiredLength);
             }
 
             // read data fully
 
             try (FileInputStream in = new FileInputStream(regionFile)) {
-                in.read(chunkTempBuffer);
+                in.getChannel().read(chunkTempBuffer);
+                chunkTempBuffer.position(0);
+                chunkTempBuffer.limit((int)requiredLength);
             } catch (IOException ex) {
                 synchronized (System.err) {
                     System.err.println("Failed to read region file data for " + regionFile.getAbsolutePath());
@@ -72,7 +74,7 @@ public final class Main {
             }
 
             // prepare header
-            final IntBuffer regionFileAsInt = ByteBuffer.wrap(chunkTempBuffer).asIntBuffer();
+            final IntBuffer regionFileAsInt = chunkTempBuffer.asIntBuffer();
 
             for (int i = 0; i < (32 * 32); ++i) {
                 // i = x | (z << 5)
@@ -104,7 +106,11 @@ public final class Main {
                 final File targetFile = new File(rawChunkDirectory, targetName);
 
                 try (FileOutputStream out = new FileOutputStream(targetFile, false)) {
-                    out.write(chunkTempBuffer, rawDataOffset, totalBytes);
+                    chunkTempBuffer.position(rawDataOffset);
+                    chunkTempBuffer.limit(totalBytes + rawDataOffset);
+                    out.getChannel().write(chunkTempBuffer);
+                    chunkTempBuffer.position(0);
+                    chunkTempBuffer.limit((int)requiredLength);
                 } catch (IOException ex) {
                     synchronized (System.err) {
                         System.err.println("Failed to write region file data for " + regionFile.getAbsolutePath());
