@@ -2,13 +2,10 @@ package ca.spottedleaf.unregion;
 
 import java.io.File;
 import java.io.FileInputStream;
-import java.io.FileNotFoundException;
 import java.io.FileOutputStream;
 import java.io.IOException;
 import java.nio.ByteBuffer;
 import java.nio.IntBuffer;
-import java.util.ArrayList;
-import java.util.List;
 import java.util.Scanner;
 
 public final class Main {
@@ -28,7 +25,6 @@ public final class Main {
         rawChunkDirectory.mkdirs();
 
         byte[] chunkTempBuffer = new byte[2 * 1024 * 1024 * 100];
-        final List<ChunkData> chunks = new ArrayList<>(1024);
 
         for (int k = 0, len = files.length; k < len; ++k) {
             final File regionFile = files[k];
@@ -78,8 +74,6 @@ public final class Main {
             // prepare header
             final IntBuffer regionFileAsInt = ByteBuffer.wrap(chunkTempBuffer).asIntBuffer();
 
-            int totalChunkData = 0;
-
             for (int i = 0; i < (32 * 32); ++i) {
                 // i = x | (z << 5)
                 final int location = regionFileAsInt.get(i); // location = (offset << 8) | (length in sectors & 255)
@@ -124,19 +118,4 @@ public final class Main {
         }
         System.out.println("Completed");
     }
-
-    private static final class ChunkData {
-
-        public final byte[] data;
-        public final int chunkX;
-        public final int chunkZ;
-
-        public ChunkData(final byte[] data, final int chunkX, final int chunkZ) {
-            this.data = data;
-            this.chunkX = chunkX;
-            this.chunkZ = chunkZ;
-        }
-
-    }
-
 }
