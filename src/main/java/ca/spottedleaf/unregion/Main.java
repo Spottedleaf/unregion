@@ -80,7 +80,7 @@ public final class Main {
                 // i = x | (z << 5)
                 final int location = regionFileAsInt.get(i); // location = (offset << 8) | (length in sectors & 255)
                 final int offset = location >>> 8; // in sectors from the start of file (1 sector = 4096)
-                final int x = i & 32;
+                final int x = i & 31;
                 final int z = i >>> 5;
 
                 if (offset == 0) {
